@@ -50,7 +50,7 @@ function repairsTab(tab) {
 
 function openRepairForm() {
   Modal.open('Lệnh sửa chữa mới',
-    field('Thiết bị', 'equipmentId', { options: DB.equipment.map((e) => [e.id, `${e.id} — ${e.name}`]) }) + field('Nội dung sửa chữa', 'title', { required: true }) +
+    field('Thiết bị', 'equipmentId', { required: true, options: DB.equipment.map((e) => [e.id, `${e.id} — ${e.name}`]) }) + field('Nội dung sửa chữa', 'title', { required: true }) +
     `<div class="grid2">${field('Ưu tiên', 'priority', { value: 'trung_binh', options: Object.entries(CONFIG.priority).map(([k, v]) => [k, v[0]]) })}${field('Người thực hiện', 'assignee')}</div>` +
     field('Hạng mục công việc (mỗi dòng một hạng mục, có thể thêm "| số phút")', 'tasks', { type: 'textarea' }) +
     `<b>Vật tư dự kiến</b> ${btn('Nạp vật tư tương thích của thiết bị', 'repair-fill-compat', {}, 'sm')}<p class="hint">Vật tư đã xuất qua yêu cầu gắn lệnh này sẽ không bị trừ kho lần nữa khi hoàn thành.</p>` + linesEditor([]) + field('Ghi chú', 'note', { type: 'textarea' }),
@@ -97,12 +97,12 @@ function openEquipmentForm(id) {
 function openScheduleForm(id) {
   const s = id ? DB.schedules.find((x) => x.id === id) : {};
   Modal.open(id ? 'Sửa lịch bảo trì' : 'Thêm lịch bảo trì',
-    field('Thiết bị', 'equipmentId', { value: s.equipmentId, options: DB.equipment.map((e) => [e.id, e.name]) }) + field('Công việc bảo trì', 'title', { value: s.title, required: true }) +
+    field('Thiết bị', 'equipmentId', { required: true, value: s.equipmentId, options: DB.equipment.map((e) => [e.id, e.name]) }) + field('Công việc bảo trì', 'title', { value: s.title, required: true }) +
     field('Hạng mục (mỗi dòng một hạng mục, có thể thêm "| số phút")', 'tasks', { type: 'textarea', value: tasksToText(s.tasks) }) +
     `<div class="grid2">${field('Chu kỳ (ngày)', 'intervalDays', { type: 'number', value: s.intervalDays ?? 30, required: true, attrs: 'min="1"' })}${field('Lần bảo trì gần nhất', 'lastDate', { type: 'date', value: s.lastDate || today() })}</div>`,
     btn('Hủy', 'modal-close') + btn('Lưu', 'schedule-save', { id: id || '' }, 'primary'), true);
 }
 function openCompatForm() {
-  Modal.open('Khai báo vật tư tương thích', field('Thiết bị', 'equipmentId', { options: DB.equipment.map((e) => [e.id, e.name]) }) + field('Vật tư', 'supplyId', { options: DB.supplies.map((s) => [s.id, `${s.name} (${s.unit})`]) }) +
+  Modal.open('Khai báo vật tư tương thích', field('Thiết bị', 'equipmentId', { required: true, options: DB.equipment.map((e) => [e.id, e.name]) }) + field('Vật tư', 'supplyId', { required: true, options: DB.supplies.map((s) => [s.id, `${s.name} (${s.unit})`]) }) +
     field('Số lượng mỗi lần thay', 'qty', { type: 'number', value: 1, required: true, attrs: 'min="0.01" step="any"' }), btn('Hủy', 'modal-close') + btn('Lưu', 'compat-save', {}, 'primary'));
 }

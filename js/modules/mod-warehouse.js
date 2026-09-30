@@ -46,15 +46,15 @@ function openWarehouseForm(id) {
     btn('Hủy', 'modal-close') + btn('Lưu', 'warehouse-save', { id: id || '' }, 'primary'));
 }
 function openLocationForm() {
-  Modal.open('Thêm vị trí', field('Kho', 'warehouseId', { options: whOptions() }) + `<div class="grid2">${field('Mã vị trí', 'code', { required: true })}${field('Tên', 'name')}</div>`, btn('Hủy', 'modal-close') + btn('Lưu', 'location-save', {}, 'primary'));
+  Modal.open('Thêm vị trí', field('Kho', 'warehouseId', { required: true, options: whOptions() }) + `<div class="grid2">${field('Mã vị trí', 'code', { required: true })}${field('Tên', 'name')}</div>`, btn('Hủy', 'modal-close') + btn('Lưu', 'location-save', {}, 'primary'));
 }
 function openTransferForm() {
   const o = whOptions();
-  Modal.open('Phiếu chuyển kho', `<div class="grid2">${field('Từ kho', 'fromWh', { options: o })}${field('Đến kho', 'toWh', { value: (o[1] || o[0])[0], options: o })}</div>` + field('Ngày chuyển', 'date', { type: 'date', value: today() }) + '<b>Vật tư chuyển</b>' + linesEditor(),
+  Modal.open('Phiếu chuyển kho', `<div class="grid2">${field('Từ kho', 'fromWh', { required: true, options: o })}${field('Đến kho', 'toWh', { required: true, value: (o[1] || o[0])[0], options: o })}</div>` + field('Ngày chuyển', 'date', { type: 'date', value: today() }) + '<b>Vật tư chuyển</b> ' + REQ + linesEditor(),
     btn('Hủy', 'modal-close') + btn('Chuyển kho', 'transfer-save', {}, 'primary'), true);
 }
 function openConversionForm() {
-  Modal.open('Quy đổi đơn vị', field('Vật tư', 'supplyId', { options: DB.supplies.map((s) => [s.id, `${s.name} (gốc: ${s.unit})`]) }) +
-    `<div class="grid2">${field('Đơn vị nguồn', 'fromUnit', { options: CONFIG.units.map((u) => [u, u]) })}${field('1 đơn vị nguồn = … đơn vị gốc', 'factor', { type: 'number', required: true, attrs: 'min="0.0001" step="any"' })}</div>`,
+  Modal.open('Quy đổi đơn vị', field('Vật tư', 'supplyId', { required: true, options: DB.supplies.map((s) => [s.id, `${s.name} (gốc: ${s.unit})`]) }) +
+    `<div class="grid2">${field('Đơn vị nguồn', 'fromUnit', { required: true, options: CONFIG.units.map((u) => [u, u]) })}${field('1 đơn vị nguồn = … đơn vị gốc', 'factor', { type: 'number', required: true, attrs: 'min="0.0001" step="any"' })}</div>`,
     btn('Hủy', 'modal-close') + btn('Lưu', 'conversion-save', {}, 'primary'));
 }

@@ -70,30 +70,30 @@ function openPODetail(id) {
 }
 
 function openPRForm() {
-  Modal.open('Đề nghị mua', `<div class="grid2">${field('Kho nhận', 'warehouseId', { options: whOptions() })}${field('Ưu tiên', 'priority', { value: 'trung_binh', options: Object.entries(CONFIG.priority).map(([k, v]) => [k, v[0]]) })}</div>` +
-    field('Cần trước ngày', 'requiredDate', { type: 'date' }) + '<b>Vật tư cần mua</b>' + linesEditor(), btn('Hủy', 'modal-close') + btn('Gửi đề nghị', 'pr-save', {}, 'primary'), true);
+  Modal.open('Đề nghị mua', `<div class="grid2">${field('Kho nhận', 'warehouseId', { required: true, options: whOptions() })}${field('Ưu tiên', 'priority', { value: 'trung_binh', options: Object.entries(CONFIG.priority).map(([k, v]) => [k, v[0]]) })}</div>` +
+    field('Cần trước ngày', 'requiredDate', { type: 'date' }) + '<b>Vật tư cần mua</b> ' + REQ + linesEditor(), btn('Hủy', 'modal-close') + btn('Gửi đề nghị', 'pr-save', {}, 'primary'), true);
 }
 function openQuoteForm() {
-  Modal.open('Báo giá nhà cung cấp', `<div class="grid2">${field('Nhà cung cấp', 'supplierId', { options: [['', '— chọn —'], ...DB.suppliers.map((s) => [s.id, s.name])] })}${field('Hiệu lực đến', 'validUntil', { type: 'date', value: addDays(today(), 30) })}</div>` +
-    '<b>Vật tư và đơn giá (theo đơn vị gốc)</b>' + linesEditor([{}], 'Đơn giá'), btn('Hủy', 'modal-close') + btn('Lưu báo giá', 'quote-save', {}, 'primary'), true);
+  Modal.open('Báo giá nhà cung cấp', `<div class="grid2">${field('Nhà cung cấp', 'supplierId', { required: true, options: [['', '— chọn —'], ...DB.suppliers.map((s) => [s.id, s.name])] })}${field('Hiệu lực đến', 'validUntil', { required: true, type: 'date', value: addDays(today(), 30) })}</div>` +
+    '<b>Vật tư và đơn giá (theo đơn vị gốc)</b> ' + REQ + linesEditor([{}], 'Đơn giá'), btn('Hủy', 'modal-close') + btn('Lưu báo giá', 'quote-save', {}, 'primary'), true);
 }
 function openPOForm(prId) {
   const r = findPR(prId, 'da_duyet'); if (!r) return;
   const lead = Math.max(7, ...r.lines.map((l) => (DB.reorderRules.find((x) => x.supplyId === l.supplyId) || {}).leadTime || 0));
-  Modal.open('Tạo đơn mua từ ' + r.id, field('Nhà cung cấp', 'supplierId', { options: [['', '— chọn —'], ...DB.suppliers.map((s) => [s.id, s.name])] }) + field('Dự kiến về', 'expected', { type: 'date', value: addDays(today(), lead) }) +
+  Modal.open('Tạo đơn mua từ ' + r.id, field('Nhà cung cấp', 'supplierId', { required: true, options: [['', '— chọn —'], ...DB.suppliers.map((s) => [s.id, s.name])] }) + field('Dự kiến về', 'expected', { type: 'date', value: addDays(today(), lead) }) +
     `<p class="hint">Đơn giá lấy từ báo giá còn hiệu lực của nhà cung cấp; nếu không có sẽ dùng đơn giá gần nhất của vật tư.</p><p>${esc(Q.linesText(r.lines))}</p>`, btn('Hủy', 'modal-close') + btn('Tạo đơn', 'po-save', { id: prId }, 'primary'));
 }
 function openReceiveForm(id) {
   const o = findPO(id); if (!o) return;
   const rows = o.lines.map((l, i) => `<tr><td>${esc(Q.supplyName(l.supplyId))}<br><small>còn ${fmtN(l.qty - l.received)}</small></td><td><input type="number" name="qty_${i}" min="0" step="any" value="${l.qty - l.received}" style="width:80px"></td><td><input type="number" name="rej_${i}" min="0" step="any" value="0" style="width:70px"></td><td><input name="lot_${i}" placeholder="Số lô" style="width:100px"></td><td><input type="date" name="exp_${i}"></td></tr>`).join('');
-  Modal.open('Nhận hàng ' + o.id, field('Kho nhận', 'warehouseId', { options: whOptions() }) + tableShell(['Vật tư', 'Đạt', 'Từ chối', 'Lô', 'Hạn dùng'], rows), btn('Hủy', 'modal-close') + btn('Nhập kho', 'po-receive-save', { id }, 'primary'), true);
+  Modal.open('Nhận hàng ' + o.id, field('Kho nhận', 'warehouseId', { required: true, options: whOptions() }) + tableShell(['Vật tư', 'Đạt', 'Từ chối', 'Lô', 'Hạn dùng'], rows), btn('Hủy', 'modal-close') + btn('Nhập kho', 'po-receive-save', { id }, 'primary'), true);
 }
 function openStandardForm() {
   Modal.open('Định mức vật tư', field('Tên định mức', 'name', { required: true }) + `<div class="grid2">${field('Thiết bị áp dụng', 'equipmentId', { options: [['', '— chung —'], ...DB.equipment.map((e) => [e.id, e.name])] })}${field('Cơ sở tính', 'basis', { options: Object.entries(CONFIG.basis) })}</div>` +
-    '<b>Vật tư và số lượng</b>' + linesEditor(), btn('Hủy', 'modal-close') + btn('Lưu (nháp)', 'standard-save', {}, 'primary'), true);
+    '<b>Vật tư và số lượng</b> ' + REQ + linesEditor(), btn('Hủy', 'modal-close') + btn('Lưu (nháp)', 'standard-save', {}, 'primary'), true);
 }
 function openRuleForm() {
-  const n = (label, name, value = 0) => field(label, name, { type: 'number', value, attrs: 'min="0" step="any"' });
-  Modal.open('Quy tắc đặt hàng', `<div class="grid2">${field('Vật tư', 'supplyId', { options: DB.supplies.map((s) => [s.id, s.name]) })}${field('Kho', 'warehouseId', { options: whOptions() })}
-    ${n('Tồn tối thiểu', 'min')}${n('Điểm đặt lại', 'reorderPoint')}${n('Tồn tối đa', 'max')}${n('Lead time (ngày)', 'leadTime', 7)}${n('Tồn an toàn', 'safety')}</div>`, btn('Hủy', 'modal-close') + btn('Lưu', 'rule-save', {}, 'primary'));
+  const n = (label, name, value = 0, required = false) => field(label, name, { required, type: 'number', value, attrs: 'min="0" step="any"' });
+  Modal.open('Quy tắc đặt hàng', `<div class="grid2">${field('Vật tư', 'supplyId', { required: true, options: DB.supplies.map((s) => [s.id, s.name]) })}${field('Kho', 'warehouseId', { required: true, options: whOptions() })}
+    ${n('Tồn tối thiểu', 'min', 0, true)}${n('Điểm đặt lại', 'reorderPoint', 0, true)}${n('Tồn tối đa', 'max', 0, true)}${n('Lead time (ngày)', 'leadTime', 7)}${n('Tồn an toàn', 'safety')}</div>`, btn('Hủy', 'modal-close') + btn('Lưu', 'rule-save', {}, 'primary'));
 }

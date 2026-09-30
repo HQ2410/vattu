@@ -40,7 +40,7 @@ const Toast = {
 const Modal = {
   open(title, body, footer = '', wide = false) {
     $('#modalHost').innerHTML = `<div class="modal ${wide ? 'wide' : ''}"><div class="modal-h"><b>${esc(title)}</b><button class="icon-btn" data-a="modal-close">×</button></div>
-      <div class="modal-b"><form id="modalForm" onsubmit="return false">${body}</form></div><div class="modal-f">${footer}</div></div>`;
+      <div class="modal-b"><form id="modalForm" onsubmit="return false">${body}${body.includes('class="req"') ? `<p class="hint">${REQ} Trường bắt buộc</p>` : ''}</form></div><div class="modal-f">${footer}</div></div>`;
     $('#overlay').classList.add('on'); $('#modalHost').classList.add('on');
   },
   close() { $('#overlay').classList.remove('on'); $('#modalHost').classList.remove('on'); $('#modalHost').innerHTML = ''; },
@@ -66,13 +66,14 @@ function kpi(label, value, tone = '') { return `<div class="kpi ${tone}"><small>
 function selectHTML(name, options, value = '', attrs = '') {
   return `<select name="${name}" ${attrs}>${options.map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(value) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
 }
+const REQ = '<span class="req" title="Bắt buộc">*</span>';
 function field(label, name, { type = 'text', value = '', options = null, required = false, attrs = '' } = {}) {
   const req = required ? 'required' : '';
   let input;
   if (options) input = selectHTML(name, options, value, req);
   else if (type === 'textarea') input = `<textarea name="${name}" rows="2" ${req}>${esc(value)}</textarea>`;
   else input = `<input type="${type}" name="${name}" value="${esc(value)}" ${req} ${attrs}>`;
-  return `<div class="fld"><label>${esc(label)}</label>${input}</div>`;
+  return `<div class="fld"><label>${esc(label)}${required ? ' ' + REQ : ''}</label>${input}</div>`;
 }
 /** Bảng nhập nhiều dòng vật tư (thêm/xóa dòng bằng data-a="line-add"/"line-del") */
 const supplyOpts = () => [['', '— chọn vật tư —'], ...DB.supplies.map((s) => [s.id, `${s.name} (tồn ${fmtN(s.stock)} ${s.unit})`])];
@@ -163,8 +164,8 @@ function renderNav() {
 function renderLogin(err = '') {
   $('#login').classList.add('on');
   $('#login').innerHTML = `<div class="login-box"><h2>Vật tư &amp; Sửa chữa</h2><p>Đăng nhập để tiếp tục</p>
-    <div class="fld"><label>Tên đăng nhập</label><input id="lgUser" autocomplete="username"></div>
-    <div class="fld"><label>Mật khẩu</label><input id="lgPass" type="password" autocomplete="current-password"></div>
+    <div class="fld"><label>Tên đăng nhập ${REQ}</label><input id="lgUser" autocomplete="username"></div>
+    <div class="fld"><label>Mật khẩu ${REQ}</label><input id="lgPass" type="password" autocomplete="current-password"></div>
     <div class="lg-err">${esc(err)}</div>${btn('Đăng nhập', 'login', {}, 'primary block')}
     <p class="hint">Demo: admin, thukho, kythuat, quanly — mật khẩu 123456</p></div>`;
 }

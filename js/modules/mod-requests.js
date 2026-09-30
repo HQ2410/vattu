@@ -20,7 +20,7 @@ function openRequestForm() {
     field('Mục đích sử dụng', 'purpose', { required: true }) +
     `<div class="grid2">${field('Thiết bị (nếu có)', 'equipmentId', { options: [['', '— không —'], ...DB.equipment.map((e) => [e.id, e.name])] })}
     ${field('Lệnh sửa chữa (nếu có)', 'repairId', { options: [['', '— không —'], ...openRepairs.map((r) => [r.id, `${r.id} — ${r.title}`])] })}</div>` +
-    `<b>Vật tư cần</b>` + linesEditor(), btn('Hủy', 'modal-close') + btn('Gửi yêu cầu', 'request-save', {}, 'primary'), true);
+    `<b>Vật tư cần</b> ${REQ}` + linesEditor(), btn('Hủy', 'modal-close') + btn('Gửi yêu cầu', 'request-save', {}, 'primary'), true);
 }
 function openRequestDetail(id) {
   const r = DB.requests.find((x) => x.id === id); if (!r) return;

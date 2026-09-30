@@ -38,3 +38,6 @@
 
 /* ---- Bổ sung: dự báo & AI ---- */
 .spark{color:var(--primary);vertical-align:middle}
+
+/* ---- Dấu * trường bắt buộc ---- */
+.req{color:var(--danger);font-weight:700}

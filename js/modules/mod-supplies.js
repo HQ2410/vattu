@@ -51,24 +51,24 @@ function openSupplyForm(id) {
   const s = id ? Q.supply(id) : {};
   Modal.open(id ? 'Sửa vật tư' : 'Thêm vật tư',
     field('Tên vật tư', 'name', { value: s.name, required: true }) +
-    `<div class="grid2">${field('Nhóm', 'categoryId', { value: s.categoryId, options: DB.categories.map((c) => [c.id, c.name]) })}${field('Đơn vị tính', 'unit', { value: s.unit || 'cái', options: CONFIG.units.map((u) => [u, u]) })}
+    `<div class="grid2">${field('Nhóm', 'categoryId', { required: true, value: s.categoryId, options: DB.categories.map((c) => [c.id, c.name]) })}${field('Đơn vị tính', 'unit', { value: s.unit || 'cái', options: CONFIG.units.map((u) => [u, u]) })}
     ${field('Tồn tối thiểu', 'minStock', { type: 'number', value: s.minStock ?? 0, attrs: 'min="0"' })}${field('Đơn giá', 'price', { type: 'number', value: s.price ?? 0, attrs: 'min="0"' })}</div>`,
     btn('Hủy', 'modal-close') + btn('Lưu', 'supply-save', { id: id || '' }, 'primary'));
 }
 function openReceiptForm() {
   Modal.open('Phiếu nhập kho',
-    field('Vật tư', 'supplyId', { options: DB.supplies.map((s) => [s.id, `${s.id} — ${s.name} (gốc: ${s.unit})`]) }) +
+    field('Vật tư', 'supplyId', { required: true, options: DB.supplies.map((s) => [s.id, `${s.id} — ${s.name} (gốc: ${s.unit})`]) }) +
     `<div class="grid2">${field('Số lượng', 'qty', { type: 'number', required: true, attrs: 'min="0.01" step="any"' })}${field('Đơn vị (trống = đơn vị gốc)', 'unit', { options: [['', 'Đơn vị gốc'], ...CONFIG.units.map((u) => [u, u])] })}
     ${field('Đơn giá (theo đơn vị nhập)', 'price', { type: 'number', value: 0, attrs: 'min="0"' })}${field('Ngày nhập', 'date', { type: 'date', value: today() })}
-    ${field('Kho nhận', 'warehouseId', { options: whOptions() })}${field('Vị trí', 'locationId', { options: [['', '— không —'], ...DB.locations.map((l) => [l.id, `${Q.warehouseName(l.warehouseId)} / ${l.code}`])] })}
+    ${field('Kho nhận', 'warehouseId', { required: true, options: whOptions() })}${field('Vị trí', 'locationId', { options: [['', '— không —'], ...DB.locations.map((l) => [l.id, `${Q.warehouseName(l.warehouseId)} / ${l.code}`])] })}
     ${field('Số lô (nếu có)', 'lotNumber')}${field('Hạn dùng', 'expiry', { type: 'date' })}</div>` +
     field('Nhà cung cấp', 'supplierId', { options: [['', '— không chọn —'], ...DB.suppliers.map((s) => [s.id, s.name])] }) + field('Ghi chú', 'note', { type: 'textarea' }),
     btn('Hủy', 'modal-close') + btn('Lưu phiếu', 'receipt-save', {}, 'primary'), true);
 }
 function openIssueForm() {
   Modal.open('Phiếu xuất kho',
-    field('Kho xuất', 'warehouseId', { options: whOptions() }) +
-    field('Vật tư', 'supplyId', { options: DB.supplies.map((s) => [s.id, `${s.id} — ${s.name} (tổng tồn ${fmtN(s.stock)})`]) }) +
+    field('Kho xuất', 'warehouseId', { required: true, options: whOptions() }) +
+    field('Vật tư', 'supplyId', { required: true, options: DB.supplies.map((s) => [s.id, `${s.id} — ${s.name} (tổng tồn ${fmtN(s.stock)})`]) }) +
     `<div class="grid2">${field('Số lượng', 'qty', { type: 'number', required: true, attrs: 'min="0.01" step="any"' })}${field('Ngày xuất', 'date', { type: 'date', value: today() })}</div>` +
     '<p class="hint">Hệ thống lấy theo lô có hạn dùng gần nhất trước (FIFO).</p>' + field('Mục đích sử dụng', 'purpose') + field('Ghi chú', 'note', { type: 'textarea' }),
     btn('Hủy', 'modal-close') + btn('Lưu phiếu', 'issue-save', {}, 'primary'));
@@ -82,7 +82,7 @@ function openSupplierForm(id) {
 function openStocktakeForm(wh = defaultWh()) {
   const rows = DB.supplies.map((s) => `<tr><td>${esc(s.name)}</td><td class="num">${fmtN(Q.whQty(s.id, wh))} ${esc(s.unit)}</td><td><input type="number" name="act_${esc(s.id)}" min="0" step="any" placeholder="Thực tế" style="width:110px"></td></tr>`).join('');
   Modal.open('Phiếu kiểm kê',
-    `<div class="grid2">${selectHTML('warehouseId', whOptions(), wh, 'data-change="stocktake-wh"').replace(/^/, '<div class="fld"><label>Kho kiểm kê</label>').replace(/$/, '</div>')}${field('Ngày kiểm', 'date', { type: 'date', value: today() })}</div>${field('Ghi chú', 'note')}
+    `<div class="grid2">${selectHTML('warehouseId', whOptions(), wh, 'data-change="stocktake-wh"').replace(/^/, '<div class="fld"><label>Kho kiểm kê ' + REQ + '</label>').replace(/$/, '</div>')}${field('Ngày kiểm', 'date', { required: true, type: 'date', value: today() })}</div>${field('Ghi chú', 'note')}
     <p class="hint">Chỉ nhập số thực tế cho vật tư đã kiểm; dòng để trống sẽ được bỏ qua. Khi lưu, tồn của kho này được điều chỉnh theo số thực tế.</p>` +
     tableShell(['Vật tư', '#Tồn hệ thống (kho này)', 'Thực tế'], rows),
     btn('Hủy', 'modal-close') + btn('Lưu & điều chỉnh tồn', 'stocktake-save', {}, 'primary'), true);
