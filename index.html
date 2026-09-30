@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản lý vật tư tiêu hao và sửa chữa</title>
+  <link rel="icon" href="data:,">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><i class="fa-solid fa-screwdriver-wrench"></i><div><b>VẬT TƯ &amp; SỬA CHỮA</b><small>Consumables &amp; Maintenance</small></div></div>
+      <nav class="nav" id="nav"></nav>
+    </aside>
+    <div class="main">
+      <header class="topbar"><div><div class="crumb-title" id="crumbTitle"></div><div class="crumb" id="crumb"></div></div><div class="userbox" id="userbox"></div></header>
+      <main class="view" id="view"></main>
+    </div>
+  </div>
+  <div class="login" id="login"></div>
+  <div class="overlay" id="overlay"></div>
+  <div class="modal-host" id="modalHost"></div>
+  <div class="toasts" id="toasts"></div>
+
+  <!-- LOAD ORDER: 1) data  2) api  3) core  4) modules  5) app.js (actions + boot) -->
+  <script src="js/data/data.js"></script>
+
+  <script src="js/api/kio-config.js"></script>
+  <script src="js/api/kio-data-utils.js"></script>
+  <script src="https://kio.dvqt.vn/list.js"></script>
+  <script src="https://kio.dvqt.vn/krud.js"></script>
+  <script src="js/api/kio-api.js"></script>
+  <script src="js/api/kio-bridge.js"></script>
+  <script src="js/api/supply-api.js"></script>
+  <script src="js/api/purchase-api.js"></script>
+  <script src="js/api/request-api.js"></script>
+  <script src="js/api/repair-api.js"></script>
+  <script src="js/api/maintenance-api.js"></script>
+  <script src="js/api/system-api.js"></script>
+  <script src="js/api/ai-api.js"></script>
+
+  <script src="js/core/app.core.js"></script>
+
+  <script src="js/modules/mod-dashboard.js"></script>
+  <script src="js/modules/mod-supplies.js"></script>
+  <script src="js/modules/mod-warehouse.js"></script>
+  <script src="js/modules/mod-purchasing.js"></script>
+  <script src="js/modules/mod-requests.js"></script>
+  <script src="js/modules/mod-repairs.js"></script>
+  <script src="js/modules/mod-reports.js"></script>
+  <script src="js/modules/mod-system.js"></script>
+  <script src="js/modules/mod-ai.js"></script>
+
+  <script src="js/app.maintenance.js"></script>
+  <script src="js/app.warehouse.js"></script>
+  <script src="js/app.purchasing.js"></script>
+  <script src="js/app.ai.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
