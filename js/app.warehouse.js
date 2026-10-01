@@ -46,11 +46,11 @@ function saveWarehouse(id) {
   if (id) { const w = DB.warehouses.find((x) => x.id === id); before = { ...w }; Object.assign(w, data); } else DB.warehouses.push({ id: uid('KHO'), ...data });
   SupplyAPI.save('warehouses'); if (id) Audit.change('Sửa kho', data.name, before, data); else Audit.log('Thêm kho', data.name); Modal.close(); render(); Toast.ok('Đã lưu kho');
 }
-function deleteWarehouse(id) {
+async function deleteWarehouse(id) {
   if (DB.warehouses.length <= 1) return Toast.err('Phải còn ít nhất một kho');
   if (DB.balances.some((b) => b.warehouseId === id && b.qty > 0)) return Toast.err('Kho còn tồn, hãy chuyển hết hàng trước khi xóa');
   if (DB.transfers.some((t) => t.fromWh === id || t.toWh === id) || DB.receipts.some((r) => r.warehouseId === id) || DB.issues.some((r) => r.warehouseId === id)) return Toast.err('Kho đã có chứng từ, không thể xóa');
-  if (!confirm('Xóa kho này?')) return;
+  if (!(await Confirm.ask({ title: 'Xóa kho', message: 'Bạn có chắc muốn xóa kho này và toàn bộ vị trí kho? Thao tác không thể hoàn tác.', confirmText: 'Xóa' }))) return;
   DB.warehouses = DB.warehouses.filter((w) => w.id !== id); DB.locations = DB.locations.filter((l) => l.warehouseId !== id);
   SupplyAPI.save('warehouses'); SupplyAPI.save('locations'); Audit.log('Xóa kho', id); render();
 }

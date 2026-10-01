@@ -66,5 +66,9 @@ Object.assign(Actions, {
   'task-open': guard('repairs.write', (d) => openTaskForm(d.repair, d.task)), 'task-save': guard('repairs.write', (d) => saveTask(d.repair, d.task)),
   'equipment-history': (d) => openEquipmentHistory(d.id),
   'approval-approve': (d) => { const a = DB.approvals.find((x) => x.id === d.id); if (a) Approvals.decide(a, true); },
-  'approval-reject': (d) => { const a = DB.approvals.find((x) => x.id === d.id); if (a && confirm('Từ chối chứng từ này?')) Approvals.decide(a, false); },
+  'approval-reject': async (d) => {
+    const a = DB.approvals.find((x) => x.id === d.id); if (!a) return;
+    const r = await Confirm.ask({ title: 'Từ chối chứng từ', message: `Bạn có chắc muốn từ chối ${CONFIG.docTypes[a.docType] || a.docType} ${a.docId}?`, confirmText: 'Từ chối', note: { label: 'Lý do', placeholder: 'Không bắt buộc' } });
+    if (r) Approvals.decide(a, false, r.note);
+  },
 });

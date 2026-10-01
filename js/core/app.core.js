@@ -53,6 +53,48 @@ const Modal = {
   },
 };
 
+/** Popup xác nhận dùng thay cho window.confirm().
+ *  Confirm.ask({ title, message, confirmText, cancelText, tone: 'danger'|'primary', note: { label, required, placeholder } })
+ *  → Promise: null nếu người dùng hủy; { note } nếu xác nhận (note = '' khi không có ô ghi chú).
+ *  Dùng host riêng nên mở được cả khi đang có Modal khác và không làm mất dữ liệu form bên dưới. */
+const Confirm = {
+  _open: null,
+  ask({ title = 'Xác nhận', message = '', confirmText = 'Xác nhận', cancelText = 'Hủy', tone = 'danger', note = null } = {}) {
+    if (this._open) this._open(null); // chỉ cho một popup xác nhận tại một thời điểm
+    return new Promise((resolve) => {
+      const host = document.createElement('div');
+      host.className = 'confirm-host';
+      const noteHTML = note ? `<div class="fld"><label>${esc(note.label || 'Ghi chú')}${note.required ? ' ' + REQ : ''}</label><textarea name="note" rows="3" placeholder="${esc(note.placeholder || '')}" ${note.required ? 'required' : ''}></textarea></div><div class="lg-err" data-confirm-err></div>` : '';
+      host.innerHTML = `<div class="confirm-backdrop" data-confirm-cancel></div>
+        <form class="confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMsg" onsubmit="return false">
+          <div class="confirm-h"><i class="fa-solid ${tone === 'danger' ? 'fa-triangle-exclamation' : 'fa-circle-question'} confirm-ico ${tone}"></i><b id="confirmTitle">${esc(title)}</b></div>
+          <div class="confirm-b"><p id="confirmMsg">${esc(message)}</p>${noteHTML}</div>
+          <div class="confirm-f"><button type="button" class="btn" data-confirm-cancel>${esc(cancelText)}</button><button type="submit" class="btn ${tone === 'danger' ? 'danger-fill' : 'primary'}">${esc(confirmText)}</button></div>
+        </form>`;
+      document.body.appendChild(host);
+      const form = host.querySelector('form');
+      let done = false;
+      const finish = (val) => {
+        if (done) return; done = true;
+        document.removeEventListener('keydown', onKey, true);
+        host.remove(); this._open = null; resolve(val);
+      };
+      const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); finish(null); } };
+      document.addEventListener('keydown', onKey, true);
+      this._open = finish;
+      host.querySelectorAll('[data-confirm-cancel]').forEach((el) => el.addEventListener('click', () => finish(null)));
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const val = note ? form.elements.note.value.trim() : '';
+        if (note && note.required && !val) { host.querySelector('[data-confirm-err]').textContent = 'Vui lòng nhập ' + (note.label || 'ghi chú').toLowerCase(); form.elements.note.focus(); return; }
+        finish({ note: val });
+      });
+      // Focus: ô ghi chú nếu có, ngược lại nút Hủy (tránh vô tình xác nhận thao tác xóa bằng Enter)
+      setTimeout(() => (note ? form.elements.note : form.querySelector('[data-confirm-cancel].btn')).focus(), 0);
+    });
+  },
+};
+
 /* ---------- Widget dùng lại ---------- */
 function badge(map, key) { const [label, cls] = map[key] || [key, 'b-gray']; return `<span class="badge ${cls}">${esc(label)}</span>`; }
 function pageHead(title, sub, actions = '') { return `<div class="page-head"><div><h2>${esc(title)}</h2><p>${esc(sub)}</p></div><div class="head-actions">${actions}</div></div>`; }
@@ -66,10 +108,12 @@ function kpi(label, value, tone = '') { return `<div class="kpi ${tone}"><small>
 function selectHTML(name, options, value = '', attrs = '') {
   return `<select name="${name}" ${attrs}>${options.map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(value) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
 }
+const isDigits = (x) => /^\d+$/.test(String(x ?? '').trim());
 const REQ = '<span class="req" title="Bắt buộc">*</span>';
-function field(label, name, { type = 'text', value = '', options = null, required = false, attrs = '' } = {}) {
+function field(label, name, { type = 'text', value = '', options = null, required = false, attrs = '', digits = false } = {}) {
   const req = required ? 'required' : '';
   let input;
+  if (digits) return `<div class="fld"><label>${esc(label)}${required ? ' ' + REQ : ''}</label><input type="text" inputmode="numeric" pattern="[0-9]*" data-digits autocomplete="off" name="${name}" value="${esc(value)}" ${req} ${attrs}></div>`;
   if (options) input = selectHTML(name, options, value, req);
   else if (type === 'textarea') input = `<textarea name="${name}" rows="2" ${req}>${esc(value)}</textarea>`;
   else input = `<input type="${type}" name="${name}" value="${esc(value)}" ${req} ${attrs}>`;
@@ -77,9 +121,9 @@ function field(label, name, { type = 'text', value = '', options = null, require
 }
 /** Bảng nhập nhiều dòng vật tư (thêm/xóa dòng bằng data-a="line-add"/"line-del") */
 const supplyOpts = () => [['', '— chọn vật tư —'], ...DB.supplies.map((s) => [s.id, `${s.name} (tồn ${fmtN(s.stock)} ${s.unit})`])];
-const lineRow = (r = {}, ph = 'SL') => `<div class="line">${selectHTML('supply', supplyOpts(), r.supplyId || '')}<input type="number" name="qty" min="0" step="any" placeholder="${esc(ph)}" value="${r.qty ?? ''}"><button type="button" class="icon-btn" data-a="line-del" title="Bỏ dòng">×</button></div>`;
-function linesEditor(rows = [{}], ph = 'SL') {
-  return `<div id="lines">${(rows.length ? rows : [{}]).map((r) => lineRow(r, ph)).join('')}</div><button type="button" class="btn sm" data-a="line-add">+ Thêm dòng</button>`;
+const lineRow = (r = {}, ph = 'SL', digits = false) => `<div class="line">${selectHTML('supply', supplyOpts(), r.supplyId || '')}<input ${digits ? 'type="text" inputmode="numeric" pattern="[0-9]*" data-digits autocomplete="off"' : 'type="number" min="0" step="any"'} name="qty" placeholder="${esc(ph)}" value="${r.qty ?? ''}"><button type="button" class="icon-btn" data-a="line-del" title="Bỏ dòng">×</button></div>`;
+function linesEditor(rows = [{}], ph = 'SL', digits = false) {
+  return `<div id="lines">${(rows.length ? rows : [{}]).map((r) => lineRow(r, ph, digits)).join('')}</div><button type="button" class="btn sm" data-a="line-add">+ Thêm dòng</button>`;
 }
 const btn = (label, a, data = {}, cls = '') => `<button type="button" class="btn ${cls}" data-a="${a}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}>${label}</button>`;
 const can = (perm, html) => (Auth.can(perm) ? html : '');
@@ -198,6 +242,11 @@ document.addEventListener('click', (e) => {
 });
 document.addEventListener('change', (e) => { const a = e.target.dataset && e.target.dataset.change; if (a && Actions[a]) Actions[a]({ value: e.target.value }); });
 document.addEventListener('input', (e) => {
+  // Ô nhập số nguyên (đơn giá…): tự loại mọi ký tự không phải chữ số, kể cả khi dán
+  if (e.target.matches && e.target.matches('input[data-digits]')) {
+    const clean = e.target.value.replace(/\D/g, '');
+    if (clean !== e.target.value) e.target.value = clean;
+  }
   const f = e.target.dataset && e.target.dataset.f;
   if (f && f in State) { State[f] = e.target.value; render(); }
 });

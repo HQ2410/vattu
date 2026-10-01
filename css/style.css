@@ -41,3 +41,12 @@
 
 /* ---- Dấu * trường bắt buộc ---- */
 .req{color:var(--danger);font-weight:700}
+.confirm-host{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:16px}
+.confirm-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.55)}
+.confirm-box{position:relative;background:var(--surface);border-radius:12px;width:min(420px,94vw);box-shadow:0 20px 50px rgba(15,23,42,.3);animation:confirm-in .12s ease-out}
+.confirm-h{display:flex;align-items:center;gap:10px;padding:16px 18px 4px;font-size:16px}
+.confirm-ico{font-size:20px}.confirm-ico.danger{color:var(--danger)}.confirm-ico.primary{color:var(--primary)}
+.confirm-b{padding:8px 18px 14px}.confirm-b p{margin:0 0 10px;color:var(--text-2)}.confirm-b .fld{margin-top:6px}
+.confirm-f{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.btn.danger-fill{background:var(--danger);border-color:var(--danger);color:#fff}.btn.danger-fill:hover{background:#b91c1c}
+@keyframes confirm-in{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}

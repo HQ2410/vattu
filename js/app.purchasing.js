@@ -16,18 +16,26 @@ function createPR({ warehouseId, priority = 'trung_binh', requiredDate = '', lin
   r.approvalId = Approvals.start('purchase', r.id, lines.reduce((t, l) => t + l.qty * ((Q.supply(l.supplyId) || {}).price || 0), 0)).id;
   PurchaseAPI.save('purchaseRequests'); Audit.log('Tạo đề nghị mua', r.id); return r;
 }
-function approvePR(id, ok) {
-  const r = findPR(id, 'cho_duyet'); if (!r) return;
+async function approvePR(id, ok) {
+  let r = findPR(id, 'cho_duyet'); if (!r) return;
+  let note = '';
+  if (!ok) {
+    const res = await Confirm.ask({ title: 'Từ chối đề nghị mua', message: `Bạn có chắc muốn từ chối đề nghị mua ${r.id}?`, confirmText: 'Từ chối', note: { label: 'Lý do', placeholder: 'Không bắt buộc' } });
+    if (!res) return;
+    note = res.note;
+    r = findPR(id, 'cho_duyet'); if (!r) return; // trạng thái có thể đã đổi khi popup đang mở
+  }
   const a = Approvals.forDoc('purchase', id);
-  if (!ok && !confirm('Từ chối đề nghị mua này?')) return;
   if (!a) { r.status = ok ? 'da_duyet' : 'tu_choi'; PurchaseAPI.save('purchaseRequests'); return render(); } // dữ liệu cũ chưa có luồng duyệt
-  Approvals.decide(a, ok);
+  Approvals.decide(a, ok, note);
 }
 
 /* ---------- Báo giá ---------- */
 function saveQuote() {
   const v = Modal.values(), lines = Modal.lines(false).map((l) => ({ supplyId: l.supplyId, price: l.qty }));
   if (!v.supplierId) return Toast.err('Chọn nhà cung cấp');
+  const f = new FormData($('#modalForm')), sup = f.getAll('supply'), prc = f.getAll('qty');
+  if (sup.some((id, i) => id && !isDigits(prc[i]))) return Toast.err('Đơn giá phải nhập bằng chữ số (0–9)');
   if (!lines.length) return Toast.err('Thêm ít nhất một vật tư kèm đơn giá');
   if (v.validUntil < today()) return Toast.err('Hạn hiệu lực phải từ hôm nay trở đi');
   DB.quotes.unshift({ id: uid('BG'), supplierId: v.supplierId, date: today(), validUntil: v.validUntil, lines });
@@ -64,9 +72,11 @@ function receivePO(id) {
   po.status = po.lines.every((l) => l.received >= l.qty - 1e-9) ? 'hoan_thanh' : 'nhan_mot_phan';
   SupplyAPI.save('receipts'); PurchaseAPI.save('orders'); commitStock(); Audit.log('Nhận hàng theo đơn mua', po.id); Modal.close(); render(); Toast.ok('Đã nhập kho theo đơn mua');
 }
-function cancelPO(id) {
-  const po = findPO(id);
-  if (!po || po.status !== 'da_dat' || !confirm('Hủy đơn mua này?')) return;
+async function cancelPO(id) {
+  let po = findPO(id);
+  if (!po || po.status !== 'da_dat') return;
+  if (!(await Confirm.ask({ title: 'Hủy đơn mua', message: `Bạn có chắc muốn hủy đơn mua ${po.id}?`, confirmText: 'Hủy đơn', cancelText: 'Không' }))) return;
+  po = findPO(id); if (!po || po.status !== 'da_dat') return; // trạng thái có thể đã đổi khi popup đang mở
   po.status = 'huy'; PurchaseAPI.save('orders'); Audit.log('Hủy đơn mua', po.id); render();
 }
 
@@ -84,7 +94,10 @@ function approveStandard(id) {
   const s = DB.standards.find((x) => x.id === id); if (!s || s.status !== 'nhap') return;
   s.status = 'hieu_luc'; s.approvedBy = Auth.user.name; PurchaseAPI.save('standards'); Audit.log('Duyệt định mức', s.name); render();
 }
-function deleteStandard(id) { if (!confirm('Xóa định mức này?')) return; DB.standards = DB.standards.filter((s) => s.id !== id); PurchaseAPI.save('standards'); render(); }
+async function deleteStandard(id) {
+  if (!(await Confirm.ask({ title: 'Xóa định mức', message: 'Bạn có chắc muốn xóa định mức này? Thao tác không thể hoàn tác.', confirmText: 'Xóa' }))) return;
+  DB.standards = DB.standards.filter((s) => s.id !== id); PurchaseAPI.save('standards'); render();
+}
 /** Lập yêu cầu vật tư từ định mức đang hiệu lực (đi tiếp luồng duyệt/xuất như bình thường) */
 function standardToRequest(id) {
   const s = DB.standards.find((x) => x.id === id);

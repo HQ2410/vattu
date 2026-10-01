@@ -23,6 +23,7 @@ const Audit = {
 function saveSupply(id) {
   const v = Modal.values();
   if (!v.name.trim()) return Toast.err('Nhập tên vật tư');
+  if (!isDigits(v.price)) return Toast.err('Đơn giá phải nhập bằng chữ số (0–9)');
   const data = { name: v.name.trim(), categoryId: v.categoryId, unit: v.unit, minStock: Number(v.minStock) || 0, price: Number(v.price) || 0 };
   let target, before;
   if (id) { target = Q.supply(id); before = { ...target }; Object.assign(target, data); } else { target = { id: uid('VT'), stock: 0, ...data }; DB.supplies.push(target); }
@@ -33,9 +34,9 @@ function supplyInUse(id) {
     DB.requests.some((r) => r.lines.some((l) => l.supplyId === id)) || DB.repairs.some((r) => r.lines.some((l) => l.supplyId === id)) || DB.stocktakes.some((k) => k.lines.some((l) => l.supplyId === id)) ||
     DB.purchaseRequests.some((r) => r.lines.some((l) => l.supplyId === id)) || DB.orders.some((o) => o.lines.some((l) => l.supplyId === id)) || DB.balances.some((b) => b.supplyId === id && b.qty > 0);
 }
-function deleteSupply(id) {
+async function deleteSupply(id) {
   if (supplyInUse(id)) return Toast.err('Vật tư đã phát sinh chứng từ, không thể xóa');
-  if (!confirm('Xóa vật tư này?')) return;
+  if (!(await Confirm.ask({ title: 'Xóa vật tư', message: 'Bạn có chắc muốn xóa vật tư này? Thao tác không thể hoàn tác.', confirmText: 'Xóa' }))) return;
   DB.supplies = DB.supplies.filter((s) => s.id !== id);
   SupplyAPI.save('supplies'); Audit.log('Xóa vật tư', id); render();
 }
@@ -43,6 +44,7 @@ function saveReceipt() {
   const v = Modal.values(), s = Q.supply(v.supplyId);
   let qty = Number(v.qty), price = Number(v.price) || 0;
   if (!(qty > 0)) return Toast.err('Số lượng phải lớn hơn 0');
+  if (!isDigits(v.price)) return Toast.err('Đơn giá phải nhập bằng chữ số (0–9)');
   const base = toBaseUnit(s.id, qty, v.unit);
   if (!base) return Toast.err(`Chưa khai báo quy đổi ${v.unit} → ${s.unit} cho ${s.name}`);
   qty = base.qty; price = price / base.factor; // lưu theo đơn vị gốc
@@ -77,9 +79,9 @@ function saveSupplier(id) {
   if (id) Object.assign(DB.suppliers.find((s) => s.id === id), data); else DB.suppliers.push({ id: uid('NCC'), ...data });
   SupplyAPI.save('suppliers'); Audit.log(id ? 'Sửa nhà cung cấp' : 'Thêm nhà cung cấp', data.name); Modal.close(); render(); Toast.ok('Đã lưu nhà cung cấp');
 }
-function deleteSupplier(id) {
+async function deleteSupplier(id) {
   if (DB.receipts.some((r) => r.supplierId === id)) return Toast.err('Nhà cung cấp đã có phiếu nhập, không thể xóa');
-  if (!confirm('Xóa nhà cung cấp này?')) return;
+  if (!(await Confirm.ask({ title: 'Xóa nhà cung cấp', message: 'Bạn có chắc muốn xóa nhà cung cấp này? Thao tác không thể hoàn tác.', confirmText: 'Xóa' }))) return;
   DB.suppliers = DB.suppliers.filter((s) => s.id !== id); SupplyAPI.save('suppliers'); Audit.log('Xóa nhà cung cấp', id); render();
 }
 
@@ -143,9 +145,9 @@ function saveEquipment(id) {
   if (id) { const e = Q.equipment(id); before = { ...e }; Object.assign(e, data); } else DB.equipment.push({ id: uid('TB'), ...data });
   RepairAPI.save('equipment'); if (id) Audit.change('Sửa thiết bị', data.name, before, data); else Audit.log('Thêm thiết bị', data.name); Modal.close(); render(); Toast.ok('Đã lưu thiết bị');
 }
-function deleteEquipment(id) {
+async function deleteEquipment(id) {
   if (DB.repairs.some((r) => r.equipmentId === id) || DB.schedules.some((s) => s.equipmentId === id)) return Toast.err('Thiết bị đã có lệnh sửa chữa hoặc lịch bảo trì, không thể xóa');
-  if (!confirm('Xóa thiết bị này?')) return;
+  if (!(await Confirm.ask({ title: 'Xóa thiết bị', message: 'Bạn có chắc muốn xóa thiết bị này? Thao tác không thể hoàn tác.', confirmText: 'Xóa' }))) return;
   DB.equipment = DB.equipment.filter((e) => e.id !== id); RepairAPI.save('equipment'); Audit.log('Xóa thiết bị', id); render();
 }
 function setEquipmentStatus(id, status) { const e = Q.equipment(id); if (e) { e.status = status; RepairAPI.save('equipment'); } }
@@ -190,9 +192,11 @@ function completeRepair(id) {
   SupplyAPI.save('issues'); commitStock(); RepairAPI.save('repairs'); MaintenanceAPI.save('maintLogs'); MaintenanceAPI.save('usage');
   Audit.log('Hoàn thành sửa chữa', r.id); Modal.close(); render(); Toast.ok('Đã hoàn thành lệnh sửa chữa và ghi nhật ký bảo trì');
 }
-function cancelRepair(id) {
-  const r = DB.repairs.find((x) => x.id === id);
-  if (!r || r.status !== 'moi' || !confirm('Hủy lệnh sửa chữa này?')) return;
+async function cancelRepair(id) {
+  let r = DB.repairs.find((x) => x.id === id);
+  if (!r || r.status !== 'moi') return;
+  if (!(await Confirm.ask({ title: 'Hủy lệnh sửa chữa', message: `Bạn có chắc muốn hủy lệnh sửa chữa ${r.id}?`, confirmText: 'Hủy lệnh', cancelText: 'Không' }))) return;
+  r = DB.repairs.find((x) => x.id === id); if (!r || r.status !== 'moi') return; // trạng thái có thể đã đổi khi popup đang mở
   r.status = 'huy'; RepairAPI.save('repairs'); Audit.log('Hủy lệnh sửa chữa', r.id); render();
 }
 
@@ -206,8 +210,8 @@ function saveSchedule(id) {
   if (id) { const sc = DB.schedules.find((s) => s.id === id); before = { ...sc }; Object.assign(sc, data); } else DB.schedules.push({ id: uid('BT'), ...data });
   MaintenanceAPI.save('schedules'); if (id) Audit.change('Sửa lịch bảo trì', data.title, before, data); else Audit.log('Thêm lịch bảo trì', data.title); Modal.close(); render(); Toast.ok('Đã lưu lịch bảo trì');
 }
-function deleteSchedule(id) {
-  if (!confirm('Xóa lịch bảo trì này?')) return;
+async function deleteSchedule(id) {
+  if (!(await Confirm.ask({ title: 'Xóa lịch bảo trì', message: 'Bạn có chắc muốn xóa lịch bảo trì này? Thao tác không thể hoàn tác.', confirmText: 'Xóa' }))) return;
   DB.schedules = DB.schedules.filter((s) => s.id !== id); MaintenanceAPI.save('schedules'); Audit.log('Xóa lịch bảo trì', id); render();
 }
 function scheduleToRepair(id) {

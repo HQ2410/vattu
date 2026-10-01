@@ -75,7 +75,7 @@ function openPRForm() {
 }
 function openQuoteForm() {
   Modal.open('Báo giá nhà cung cấp', `<div class="grid2">${field('Nhà cung cấp', 'supplierId', { required: true, options: [['', '— chọn —'], ...DB.suppliers.map((s) => [s.id, s.name])] })}${field('Hiệu lực đến', 'validUntil', { required: true, type: 'date', value: addDays(today(), 30) })}</div>` +
-    '<b>Vật tư và đơn giá (theo đơn vị gốc)</b> ' + REQ + linesEditor([{}], 'Đơn giá'), btn('Hủy', 'modal-close') + btn('Lưu báo giá', 'quote-save', {}, 'primary'), true);
+    '<b>Vật tư và đơn giá (theo đơn vị gốc)</b> ' + REQ + linesEditor([{}], 'Đơn giá', true), btn('Hủy', 'modal-close') + btn('Lưu báo giá', 'quote-save', {}, 'primary'), true);
 }
 function openPOForm(prId) {
   const r = findPR(prId, 'da_duyet'); if (!r) return;
